@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAATH-SAATH</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#eaf5ef;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:15px}
+.container{background:white;width:100%;max-width:400px;padding:28px 22px;border-radius:22px;box-shadow:0 5px 25px #0002;text-align:center}
+.logo{font-size:32px;font-weight:bold;color:#15965b;margin-bottom:8px}
+.subtitle{color:#777;margin-bottom:25px}
+.tabs{display:flex;gap:8px;margin-bottom:20px}
+.tabs button{flex:1;background:#eaf5ef;color:#15965b;padding:12px 5px}
+.tabs button.active{background:#15965b;color:white}
+input{width:100%;padding:14px;margin:9px 0;border:1px solid #ddd;border-radius:10px;font-size:16px}
+button{width:100%;padding:14px;background:#15965b;color:white;border:0;border-radius:10px;font-size:16px;margin-top:12px;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}
+.message{font-size:14px;margin-top:15px;color:#15965b;overflow-wrap:anywhere}
+.hidden{display:none}
+#recaptcha-container{margin-top:12px;display:flex;justify-content:center}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">❤️ SAATH-SAATH</div>
+  <h2>आपका स्वागत है!</h2>
+  <p class="subtitle">अपनों से जुड़े रहें हमेशा</p>
+  <div class="tabs">
+    <button type="button" id="emailTab" class="active">ईमेल लॉगिन</button>
+    <button type="button" id="phoneTab">मोबाइल OTP</button>
+  </div>
+  <div id="emailBox">
+    <input id="email" type="email" placeholder="अपना ईमेल लिखें" autocomplete="email">
+    <input id="password" type="password" placeholder="पासवर्ड लिखें" autocomplete="current-password">
+    <button type="button" id="loginBtn">लॉगिन करें</button>
+    <button type="button" id="signupBtn">नया अकाउंट बनाएँ</button>
+  </div>
+  <div id="phoneBox" class="hidden">
+    <input id="phone" type="tel" placeholder="मोबाइल नंबर (+91 सहित)" autocomplete="tel">
+    <div id="recaptcha-container"></div>
+    <button type="button" id="sendOtpBtn">OTP भेजें</button>
+    <div id="otpBox" class="hidden">
+      <input id="otp" type="number" placeholder="OTP दर्ज करें" inputmode="numeric">
+      <button type="button" id="verifyOtpBtn">OTP सत्यापित करें</button>
+    </div>
+  </div>
+  <p id="message" class="message" role="status" aria-live="polite">SAATH-SAATH में आपका स्वागत है ❤️</p>
+</div>
+
+<script>
+/* Tabs run independently of Firebase loading */
+const emailTab=document.getElementById("emailTab");
+const phoneTab=document.getElementById("phoneTab");
+const emailBox=document.getElementById("emailBox");
+const phoneBox=document.getElementById("phoneBox");
+const message=document.getElementById("message");
+function showMessage(text){message.textContent=text;}
+emailTab.addEventListener("click",()=>{
+  emailBox.classList.remove("hidden"); phoneBox.classList.add("hidden");
+  emailTab.classList.add("active"); phoneTab.classList.remove("active");
+});
+phoneTab.addEventListener("click",()=>{
+  emailBox.classList.add("hidden"); phoneBox.classList.remove("hidden");
+  phoneTab.classList.add("active"); emailTab.classList.remove("active");
+});
+</script>
+
+<script type="module">
+(async()=>{
+  const firebaseConfig={
+    apiKey:"AIzaSyCrLbFn_u0ClPcJYpUqghU_ekPQo1C1iv8",
+    authDomain:"saath-saath-9704f.firebaseapp.com",
+    projectId:"saath-saath-9704f",
+    storageBucket:"saath-saath-9704f.firebasestorage.app",
+    messagingSenderId:"1077403082508",
+    appId:"1:1077403082508:web:37a9826ba58baae71c3329",
+    measurementId:"G-PFTLZHX3XC"
+  };
+  const byId=id=>document.getElementById(id);
+  const setBusy=(id,busy)=>{byId(id).disabled=busy;};
+  try{
+    const appModule=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+    const authModule=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+    const app=appModule.initializeApp(firebaseConfig);
+    const auth=authModule.getAuth(app);
+    let confirmationResult=null;
+    let verifier=null;
+
+    byId("signupBtn").addEventListener("click",async()=>{
+      const email=byId("email").value.trim(), password=byId("password").value;
+      if(!email||!password){showMessage("ईमेल और पासवर्ड भरें");return;}
+      if(password.length<6){showMessage("पासवर्ड कम से कम 6 अक्षर का होना चाहिए");return;}
+      setBusy("signupBtn",true);
+      try{
+        await authModule.createUserWithEmailAndPassword(auth,email,password);
+        showMessage("आपका अकाउंट बन गया! ❤️");
+      }catch(e){showMessage("अकाउंट नहीं बना: "+(e.code||e.message));}
+      finally{setBusy("signupBtn",false);}
+    });
+
+    byId("loginBtn").addEventListener("click",async()=>{
+      const email=byId("email").value.trim(), password=byId("password").value;
+      if(!email||!password){showMessage("ईमेल और पासवर्ड भरें");return;}
+      setBusy("loginBtn",true);
+      try{
+        await authModule.signInWithEmailAndPassword(auth,email,password);
+        showMessage("लॉगिन सफल हुआ ❤️");
+      }catch(e){showMessage("लॉगिन नहीं हुआ: "+(e.code||e.message));}
+      finally{setBusy("loginBtn",false);}
+    });
+
+    byId("sendOtpBtn").addEventListener("click",async()=>{
+      const phone=byId("phone").value.trim();
+      if(!/^\+[1-9]\d{7,14}$/.test(phone)){
+        showMessage("देश के कोड सहित नंबर लिखें, जैसे +919876543210");return;
+      }
+      setBusy("sendOtpBtn",true);
+      try{
+        if(!verifier){
+          verifier=new authModule.RecaptchaVerifier(auth,"recaptcha-container",{size:"normal"});
+          await verifier.render();
+        }
+        confirmationResult=await authModule.signInWithPhoneNumber(auth,phone,verifier);
+        byId("otpBox").classList.remove("hidden");
+        showMessage("OTP भेज दिया गया है। अपना SMS देखें।");
+      }catch(e){
+        if(verifier){verifier.clear();verifier=null;}
+        showMessage("OTP नहीं भेजा गया: "+(e.code||e.message));
+      }finally{setBusy("sendOtpBtn",false);}
+    });
+
+    byId("verifyOtpBtn").addEventListener("click",async()=>{
+      const otp=byId("otp").value.trim();
+      if(!confirmationResult||!otp){showMessage("OTP दर्ज करें");return;}
+      setBusy("verifyOtpBtn",true);
+      try{
+        await confirmationResult.confirm(otp);
+        showMessage("मोबाइल लॉगिन सफल हुआ ❤️");
+      }catch(e){showMessage("OTP सत्यापित नहीं हुआ: "+(e.code||e.message));}
+      finally{setBusy("verifyOtpBtn",false);}
+    });
+
+    authModule.onAuthStateChanged(auth,user=>{
+      if(user) showMessage("आप लॉगिन हैं: "+(user.email||user.phoneNumber||""));
+    });
+  }catch(e){
+    showMessage("Firebase शुरू नहीं हो पाया। इंटरनेट, Firebase सेटिंग और Authorized domain जाँचें। विवरण: "+(e.message||e));
+  }
+})();
+</script>
+</body>
+</html>
